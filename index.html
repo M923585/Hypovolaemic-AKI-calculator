@@ -1,191 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diagnostic Calculator for Hypovolaemic Acute Kidney Injury</title>
+    <meta charset="UTF-8">
+    <title>Hypovolaemic AKI Calculator</title>
 
-<p>
-2
-This calculator estimates the probability of hypovolaemic AKI in hospitalized patients with established AKI.
-3
-</p>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 750px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.5;
+        }
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    max-width: 700px;
-    margin: 40px auto;
-    padding: 20px;
-    background-color: #f7f9fc;
-}
+        h1 {
+            color: #003366;
+        }
 
-.container {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
 
-h1 {
-    color: #003366;
-}
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
 
-label {
-    display: block;
-    margin-top: 15px;
-    font-weight: bold;
-}
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
 
-input, select {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-}
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
 
-button {
-    margin-top: 20px;
-    width: 100%;
-    padding: 12px;
-    border: none;
-    background-color: #0057b8;
-    color: white;
-    font-size: 16px;
-    border-radius: 6px;
-    cursor: pointer;
-}
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+        }
 
-button:hover {
-    background-color: #004090;
-}
-
-.result {
-    margin-top: 25px;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.low {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.intermediate {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.high {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.note {
-    margin-top: 25px;
-    font-size: 12px;
-    color: #555;
-}
-</style>
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="container">
+<h1>Hypovolaemic AKI Calculator</h1>
 
-<h1>Hypovolaemic AKI Risk Calculator</h1>
+<p>
+This calculator estimates the probability of hypovolaemic acute kidney injury using a logistic regression model.
+</p>
 
-<label>Mean Arterial Pressure (mmHg)</label>
-<input type="number" id="map" step="0.1">
+<div class="card">
 
-<label>Body Temperature (°C)</label>
-<input type="number" id="temp" step="0.1">
+    <label for="map">Mean arterial pressure (mmHg)</label>
+    <input type="number" id="map" step="0.1">
 
-<label>Haemoglobin (mmol/L)</label>
-<input type="number" id="hb" step="0.1">
+    <label for="temp">Body temperature (°C)</label>
+    <input type="number" id="temp" step="0.1">
 
-<label>Creatinine at AKI onset (µmol/L)</label>
-<input type="number" id="creat" step="1">
+    <label for="hb">Haemoglobin</label>
+    <input type="number" id="hb" step="0.1">
 
-<label>Loop Diuretic Use</label>
-<select id="loop">
-    <option value="0">No</option>
-    <option value="1">Yes</option>
-</select>
+    <label for="creat">Creatinine at AKI onset (µmol/L)</label>
+    <input type="number" id="creat" step="0.1">
 
-<label>Emergency Department Admission <24h Before AKI</label>
-<select id="ed">
-    <option value="0">No</option>
-    <option value="1">Yes</option>
-</select>
+    <label for="loop">Loop diuretic use</label>
+    <select id="loop">
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+    </select>
 
-<button onclick="calculateRisk()">Calculate Risk</button>
+    <label for="ed">Emergency department admission within 24 hours preceding AKI</label>
+    <select id="ed">
+        <option value="0">No</option>
+        <option value="1">Yes</option>
+    </select>
 
-<div id="result"></div>
+    <button onclick="calculateRisk()">Calculate</button>
+    <button onclick="resetFields()">Reset</button>
 
-<div class="note">
-This calculator is based on the published diagnostic prediction model for hypovolaemic AKI.
-Clinical judgement should always prevail over model predictions.
+    <div class="result" id="result">
+        Enter values and press Calculate.
+    </div>
+
 </div>
 
+<div class="footer">
+    <p>
+        This tool is intended for research and educational purposes and should not replace clinical judgement.
+    </p>
 </div>
 
 <script>
 
 function calculateRisk() {
 
-    let map = parseFloat(document.getElementById("map").value);
-    let temp = parseFloat(document.getElementById("temp").value);
-    let hb = parseFloat(document.getElementById("hb").value);
-    let creat = parseFloat(document.getElementById("creat").value);
-    let loop = parseInt(document.getElementById("loop").value);
-    let ed = parseInt(document.getElementById("ed").value);
+    const MAP = parseFloat(document.getElementById("map").value);
+    const TEMP = parseFloat(document.getElementById("temp").value);
+    const HB = parseFloat(document.getElementById("hb").value);
+    const CREAT = parseFloat(document.getElementById("creat").value);
+    const LOOP = parseFloat(document.getElementById("loop").value);
+    const ED = parseFloat(document.getElementById("ed").value);
 
     if (
-        isNaN(map) ||
-        isNaN(temp) ||
-        isNaN(hb) ||
-        isNaN(creat)
+        isNaN(MAP) ||
+        isNaN(TEMP) ||
+        isNaN(HB) ||
+        isNaN(CREAT)
     ) {
-        alert("Please complete all fields.");
+        document.getElementById("result").innerHTML =
+            "Please complete all fields.";
         return;
     }
 
-    let logit =
+    const logit =
         0.914434183
-        + (-0.026943550 * map)
-        + (0.065512613 * temp)
-        + (0.121720509 * hb)
-        + (-0.003159524 * creat)
-        + (-0.355158593 * loop)
-        + (0.433985442 * ed);
+        - 0.026943550 * MAP
+        + 0.065512613 * TEMP
+        + 0.121720509 * HB
+        - 0.003159524 * CREAT
+        - 0.355158593 * LOOP
+        + 0.433985442 * ED;
 
-    let p = 1 / (1 + Math.exp(-logit));
-
-    let risk = (p * 100).toFixed(1);
-
-    let category = "";
-    let cssClass = "";
-
-    if (p < 0.33) {
-        category = "Low risk";
-        cssClass = "low";
-    } else if (p < 0.66) {
-        category = "Intermediate risk";
-        cssClass = "intermediate";
-    } else {
-        category = "High risk";
-        cssClass = "high";
-    }
+    const p = 1 / (1 + Math.exp(-logit));
 
     document.getElementById("result").innerHTML =
-        `<div class="${cssClass} result">
-        Predicted probability of hypovolaemic AKI:<br>
-        ${risk}%<br><br>
-        ${category}
-        </div>`;
+        "Predicted probability of hypovolaemic AKI:<br><br>" +
+        (p * 100).toFixed(1) +
+        "%";
+}
+
+function resetFields() {
+
+    document.getElementById("map").value = "";
+    document.getElementById("temp").value = "";
+    document.getElementById("hb").value = "";
+    document.getElementById("creat").value = "";
+
+    document.getElementById("loop").value = "0";
+    document.getElementById("ed").value = "0";
+
+    document.getElementById("result").innerHTML =
+        "Enter values and press Calculate.";
 }
 
 </script>
@@ -194,9 +169,6 @@ function calculateRisk() {
 </html>
 
 <hr>
-2
 <p>
-3
-Developed by M.C. van Olst et al.
-4
+Developed by M.C. Rijken van Olst et al.
 </p>
